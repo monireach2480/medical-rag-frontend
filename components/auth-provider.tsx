@@ -68,7 +68,10 @@ export function AuthProvider({
   }, [])
 
   const register = useCallback(async (payload: RegisterPayload) => {
-    const u = await registerRequest(payload)
+    // Create the account
+    await registerRequest(payload)
+    // Then login to get the JWT cookie set
+    const u = await loginRequest({ email: payload.email, password: payload.password })
     setUser(u)
     return u
   }, [])
