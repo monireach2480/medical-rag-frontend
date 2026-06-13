@@ -3,14 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 const BACKEND = 'https://medicalrag.duckdns.org'
 
 async function handler(req: NextRequest) {
-  // Extract path after /api/
   const url = new URL(req.url)
   const backendUrl = `${BACKEND}${url.pathname}${url.search}`
 
   const headers = new Headers()
-  // Forward content-type only
   const contentType = req.headers.get('content-type')
   if (contentType) headers.set('content-type', contentType)
+
+  // Forward cookies from browser to backend
+  const cookie = req.headers.get('cookie')
+  if (cookie) headers.set('cookie', cookie)
 
   let body: ArrayBuffer | undefined
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -24,17 +26,19 @@ async function handler(req: NextRequest) {
   })
 
   const resBody = await res.arrayBuffer()
-  const resHeaders = new Headers()
+  const response = new NextResponse(resBody, { status: res.status })
 
-  // Forward response headers including set-cookie
+  // Forward all headers
   res.headers.forEach((value, key) => {
-    resHeaders.set(key, value)
+    if (key.toLowerCase() === 'set-cookie') {
+      // set-cookie must be appended not set
+      response.headers.append('set-cookie', value)
+    } else {
+      response.headers.set(key, value)
+    }
   })
 
-  return new NextResponse(resBody, {
-    status: res.status,
-    headers: resHeaders,
-  })
+  return response
 }
 
 export const GET = handler
