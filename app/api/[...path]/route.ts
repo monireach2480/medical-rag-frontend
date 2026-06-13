@@ -2,27 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const BACKEND = 'https://medicalrag.duckdns.org'
 
-async function handler(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = '/' + params.path.join('/')
-  const search = req.nextUrl.search
-  const url = `${BACKEND}${path}${search}`
+async function handler(req: NextRequest) {
+  // Extract path after /api/
+  const url = new URL(req.url)
+  const backendUrl = `${BACKEND}${url.pathname}${url.search}`
 
-  const headers = new Headers(req.headers)
-  headers.delete('host')
+  const headers = new Headers()
+  // Forward content-type only
+  const contentType = req.headers.get('content-type')
+  if (contentType) headers.set('content-type', contentType)
 
-  const res = await fetch(url, {
+  let body: ArrayBuffer | undefined
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    body = await req.arrayBuffer()
+  }
+
+  const res = await fetch(backendUrl, {
     method: req.method,
     headers,
-    body: req.method !== 'GET' && req.method !== 'HEAD'
-      ? await req.arrayBuffer()
-      : undefined,
+    body,
   })
 
-  const responseHeaders = new Headers(res.headers)
+  const resBody = await res.arrayBuffer()
+  const resHeaders = new Headers()
 
-  return new NextResponse(res.body, {
+  // Forward response headers including set-cookie
+  res.headers.forEach((value, key) => {
+    resHeaders.set(key, value)
+  })
+
+  return new NextResponse(resBody, {
     status: res.status,
-    headers: responseHeaders,
+    headers: resHeaders,
   })
 }
 
