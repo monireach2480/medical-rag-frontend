@@ -4,8 +4,9 @@
 // JWT refresh strategy: if a request returns 401, we call POST /api/auth/refresh
 // once, then retry the original request a single time.
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://13.54.15.140:8000"
+// export const API_BASE_URL =
+//   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://medicalrag.duckdns.org"
+export const API_BASE_URL = ''
 
 export class ApiError extends Error {
   status: number
