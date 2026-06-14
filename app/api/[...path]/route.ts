@@ -10,7 +10,6 @@ async function handler(req: NextRequest) {
   const contentType = req.headers.get('content-type')
   if (contentType) headers.set('content-type', contentType)
 
-  // Forward cookies from browser to backend
   const cookie = req.headers.get('cookie')
   if (cookie) headers.set('cookie', cookie)
 
@@ -25,13 +24,16 @@ async function handler(req: NextRequest) {
     body,
   })
 
+  // Handle 204 No Content — no body to read
+  if (res.status === 204) {
+    return new NextResponse(null, { status: 204 })
+  }
+
   const resBody = await res.arrayBuffer()
   const response = new NextResponse(resBody, { status: res.status })
 
-  // Forward all headers
   res.headers.forEach((value, key) => {
     if (key.toLowerCase() === 'set-cookie') {
-      // set-cookie must be appended not set
       response.headers.append('set-cookie', value)
     } else {
       response.headers.set(key, value)

@@ -43,6 +43,7 @@ export function ChatWindow() {
   const {
     activeId,
     createConversation,
+    prependConversation,
     setActiveId,
   } = useConversations()
 
@@ -136,10 +137,17 @@ export function ChatWindow() {
 
       const onEvent = (event: StreamEvent) => {
         switch (event.type) {
-          case "conversation_id":
-            activeIdRef.current = String(event.conversation_id)
-            setActiveId(String(event.conversation_id))
+          case "conversation_id": {
+            const newId = String(event.conversation_id)
+            activeIdRef.current = newId
+            setActiveId(newId)
+            prependConversation({
+              id: newId,
+              title: trimmed.length > 40 ? trimmed.slice(0, 40) + "..." : trimmed,
+              created_at: new Date().toISOString(),
+            })
             break
+          }
           case "chunk":
             answer += event.content
             updateAssistant(assistantId, (m) => ({ ...m, content: answer }))
@@ -197,7 +205,7 @@ export function ChatWindow() {
         void finalDisclaimer
       }
     },
-    [streaming, updateAssistant, setActiveId],  // removed createConversation
+    [streaming, updateAssistant, setActiveId, prependConversation],
   )
 
   function stop() {
