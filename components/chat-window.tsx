@@ -133,7 +133,6 @@ export function ChatWindow() {
 
       let answer = ""
       let finalSources: Source[] | undefined
-      let finalDisclaimer: string | undefined
 
       const onEvent = (event: StreamEvent) => {
         switch (event.type) {
@@ -154,7 +153,6 @@ export function ChatWindow() {
             break
           case "sources":
             finalSources = event.sources
-            finalDisclaimer = event.disclaimer
             updateAssistant(assistantId, (m) => ({
               ...m,
               sources: event.sources,
@@ -194,15 +192,7 @@ export function ChatWindow() {
         updateAssistant(assistantId, (m) => ({ ...m, streaming: false }))
         setStreaming(false)
         abortRef.current = null
-
-        if (answer.trim() && activeIdRef.current) {
-          void saveConversationMessage(activeIdRef.current, {
-            role: "assistant",
-            content: answer,
-            sources: finalSources,
-          }).catch(() => {})
-        }
-        void finalDisclaimer
+        // ← no saveConversationMessage here, backend handles it
       }
     },
     [streaming, updateAssistant, setActiveId, prependConversation],
