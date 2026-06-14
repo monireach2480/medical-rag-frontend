@@ -114,28 +114,9 @@ export function ChatWindow() {
       const trimmed = text.trim()
       if (!trimmed || streaming) return
 
-      // Ensure a conversation exists; auto-create from the first message.
-      let conversationId = activeIdRef.current
-      if (!conversationId) {
-        try {
-          const title =
-            trimmed.length > 40 ? `${trimmed.slice(0, 40)}...` : trimmed
-          const conv = await createConversation(title)
-          conversationId = conv.id
-          activeIdRef.current = conv.id
-        } catch {
-          toast.error("Could not start a conversation")
-          return
-        }
-      }
-
       setInput("")
 
-      const userMessage: ChatMessage = {
-        id: uid(),
-        role: "user",
-        content: trimmed,
-      }
+      const userMessage: ChatMessage = { id: uid(), role: "user", content: trimmed }
       const assistantId = uid()
       const assistantMessage: ChatMessage = {
         id: assistantId,
@@ -144,12 +125,6 @@ export function ChatWindow() {
         streaming: true,
       }
       setMessages((prev) => [...prev, userMessage, assistantMessage])
-
-      // Persist the user message (best-effort).
-      void saveConversationMessage(conversationId, {
-        role: "user",
-        content: trimmed,
-      }).catch(() => {})
 
       setStreaming(true)
       const controller = new AbortController()
@@ -161,6 +136,10 @@ export function ChatWindow() {
 
       const onEvent = (event: StreamEvent) => {
         switch (event.type) {
+          case "conversation_id":
+            activeIdRef.current = String(event.conversation_id)
+            setActiveId(String(event.conversation_id))
+            break
           case "chunk":
             answer += event.content
             updateAssistant(assistantId, (m) => ({ ...m, content: answer }))
@@ -182,8 +161,7 @@ export function ChatWindow() {
             updateAssistant(assistantId, (m) => ({
               ...m,
               streaming: false,
-              content:
-                m.content || "Sorry, I ran into an error answering that.",
+              content: m.content || "Sorry, I ran into an error answering that.",
             }))
             break
         }
@@ -191,7 +169,7 @@ export function ChatWindow() {
 
       try {
         await streamChat(
-          { message: trimmed, conversation_id: conversationId },
+          { message: trimmed, conversation_id: activeIdRef.current ?? undefined },
           onEvent,
           controller.signal,
         )
@@ -209,9 +187,8 @@ export function ChatWindow() {
         setStreaming(false)
         abortRef.current = null
 
-        // Persist the assistant message if we produced any answer.
-        if (answer.trim()) {
-          void saveConversationMessage(conversationId, {
+        if (answer.trim() && activeIdRef.current) {
+          void saveConversationMessage(activeIdRef.current, {
             role: "assistant",
             content: answer,
             sources: finalSources,
@@ -220,7 +197,7 @@ export function ChatWindow() {
         void finalDisclaimer
       }
     },
-    [streaming, createConversation, updateAssistant],
+    [streaming, updateAssistant, setActiveId],  // removed createConversation
   )
 
   function stop() {
