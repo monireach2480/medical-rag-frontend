@@ -140,18 +140,26 @@ export async function streamChat(
 // ---------------------------------------------------------------------------
 
 export function listConversations() {
-  return apiFetch<Conversation[]>("/api/conversations")
+  return apiFetch<Conversation[]>("/api/conversations").then(list =>
+    list.map(c => ({ ...c, id: String(c.id) }))
+  )
 }
 
 export function createConversation(title: string) {
   return apiFetch<Conversation>("/api/conversations", {
     method: "POST",
     body: { title },
-  })
+  }).then(c => ({ ...c, id: String(c.id) }))
 }
+
 
 export function getConversationMessages(id: string) {
   return apiFetch<ConversationMessage[]>(`/api/conversations/${id}/messages`)
+    .then(msgs => msgs.map(m => ({
+      ...m,
+      id: String(m.id),
+      conversation_id: String(m.conversation_id),
+    })))
 }
 
 export function saveConversationMessage(
