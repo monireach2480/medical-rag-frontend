@@ -84,7 +84,7 @@ export async function apiFetch<T = unknown>(
   const res = await fetch(`${API_BASE_URL}${path}`, init)
 
   // Attempt a single refresh + retry on 401.
-  if (res.status === 401 && !_retried && path !== "/api/auth/refresh") {
+  if (res.status === 401 && !_retried && path !== "/api/auth/refresh" && path !== "/api/auth/login" && path !== "/api/auth/me") {
     const refreshed = await refreshToken()
     if (refreshed) {
       return apiFetch<T>(path, { ...options, _retried: true })
