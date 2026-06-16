@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
+
 const BACKEND = 'https://medicalrag.duckdns.org'
 
 async function handler(req: NextRequest) {
@@ -24,7 +27,6 @@ async function handler(req: NextRequest) {
     body,
   })
 
-  // Handle 204 No Content — no body to read
   if (res.status === 204) {
     return new NextResponse(null, { status: 204 })
   }
